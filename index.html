@@ -859,7 +859,7 @@ function tryLogin() {
 //  CONFIG — Apps Script URL은 localStorage에 저장
 // ══════════════════════════════════════════════════════════
 const LS_KEY = 'awx_script_url';
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFP_eYR0SkzUwM8uYus1uA3OBRqor89m5wJl4s7-PcS-4vaL_qZ8lP-aCKOYFCnABeag/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0CVJCbGVmdGnXadW3A3yHBxforUYU3OH5Fxm_d4ofm4xAVHL-ldf3bPaksLoJCJn72A/exec';
 let SCRIPT_URL = localStorage.getItem(LS_KEY) || DEFAULT_SCRIPT_URL;
 
 const SC = {
@@ -920,13 +920,11 @@ async function apiGet(action) {
   return data;
 }
 
+// POST 대신 GET으로 우회 (Apps Script CORS 리다이렉트 문제 해결)
 async function apiPost(body) {
   if (!SCRIPT_URL) throw new Error('Apps Script URL 미설정');
-  const res = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  const encoded = encodeURIComponent(JSON.stringify(body));
+  const res = await fetch(`${SCRIPT_URL}?method=post&payload=${encoded}`, { method: 'GET' });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || 'API 오류');
   return data;
