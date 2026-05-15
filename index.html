@@ -50,6 +50,38 @@ body {
   line-height: 1.5;
 }
 
+/* ── LOGIN SCREEN ── */
+#loginScreen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; flex-direction: column;
+}
+#loginScreen.hidden { display: none; }
+.login-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 16px; padding: 48px 44px; width: 380px;
+  display: flex; flex-direction: column;
+}
+.login-brand { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); margin-bottom: 4px; }
+.login-brand em { font-style: italic; color: var(--text); font-size: 16px; }
+.login-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 36px; letter-spacing: .3px; }
+.login-label { font-size: 11px; font-weight: 600; color: var(--muted2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.login-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: 15px; padding: 12px 14px; outline: none; transition: border-color .2s;
+  letter-spacing: 3px; margin-bottom: 20px;
+}
+.login-input:focus { border-color: var(--accent); }
+.login-btn {
+  width: 100%; padding: 12px; background: var(--accent); color: #0b0d12;
+  border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: opacity .2s; margin-bottom: 12px;
+}
+.login-btn:hover { opacity: .85; }
+.login-err { font-size: 11px; color: var(--red); text-align: center; font-family: 'DM Mono', monospace; min-height: 16px; }
+.login-footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-align: center; line-height: 1.7; }
+
 /* ── SETUP BANNER ── */
 .setup-banner {
   background: rgba(245,200,66,.06);
@@ -665,6 +697,23 @@ tbody td { padding: 10px 12px; font-size: 12px; vertical-align: top; }
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-brand">aweXome Ray<em> CRM</em></div>
+    <div class="login-sub">Techtextil 2026 · 팀 전용 · 로그인 필요</div>
+    <div class="login-label">비밀번호</div>
+    <input class="login-input" type="password" id="pwInput" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter') tryLogin()">
+    <button class="login-btn" onclick="tryLogin()">로그인</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-footer">
+      aweXome Ray Inc. · 내부 전용<br>
+      문의: account@awexomeray.com
+    </div>
+  </div>
+</div>
+
 <!-- SETUP BANNER: Apps Script URL 미설정 시 표시 -->
 <div class="setup-banner" id="setupBanner">
   <strong>⚙ 설정 필요</strong>
@@ -771,6 +820,41 @@ tbody td { padding: 10px 12px; font-size: 12px; vertical-align: top; }
 <div class="toast" id="toast"></div>
 
 <script>
+// ══════════════════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════════════════
+const LOGIN_KEY = 'awx_crm_auth';
+// 비밀번호 변경 시 여기만 수정하세요
+const TEAM_PASSWORDS = ['axr0326!!'];
+
+function checkLogin() {
+  const saved = localStorage.getItem(LOGIN_KEY);
+  if (saved === 'ok') {
+    document.getElementById('loginScreen').classList.add('hidden');
+    return true;
+  }
+  return false;
+}
+
+function tryLogin() {
+  const pw = document.getElementById('pwInput').value.trim();
+  const err = document.getElementById('loginErr');
+  if (TEAM_PASSWORDS.includes(pw)) {
+    localStorage.setItem(LOGIN_KEY, 'ok');
+    document.getElementById('loginScreen').classList.add('hidden');
+    initSetup();
+    if (SCRIPT_URL) {
+      document.getElementById('setupBanner').classList.add('hidden');
+      loadDeals();
+    }
+    err.textContent = '';
+  } else {
+    err.textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
 // ══════════════════════════════════════════════════════════
 //  CONFIG — Apps Script URL은 localStorage에 저장
 // ══════════════════════════════════════════════════════════
@@ -1200,13 +1284,16 @@ async function seedInitialData() {
 // ══════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════
-initSetup();
-if (SCRIPT_URL) {
-  document.getElementById('setupBanner').classList.add('hidden');
-  loadDeals();
-} else {
-  setSyncStatus('error', 'Apps Script URL을 설정해주세요 (상단 배너)');
+if (checkLogin()) {
+  initSetup();
+  if (SCRIPT_URL) {
+    document.getElementById('setupBanner').classList.add('hidden');
+    loadDeals();
+  } else {
+    setSyncStatus('error', 'Apps Script URL을 설정해주세요 (상단 배너)');
+  }
 }
+// 로그인 안 된 경우 loginScreen이 표시된 채로 대기
 </script>
 </body>
 </html>
